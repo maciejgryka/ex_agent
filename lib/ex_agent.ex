@@ -6,7 +6,6 @@ defmodule ExAgent do
   require Logger
 
   @api_host "https://api.openai.com/v1"
-  @sys_prompt "You are a helpful coding assistant."
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -16,12 +15,15 @@ defmodule ExAgent do
     GenServer.call(__MODULE__, {:prompt, "gpt-4.1-nano", prompt})
   end
 
-  def prompt(pid, model, prompt) do
-    GenServer.call(pid, {:prompt, model, prompt})
+  defp system_prompt do
+    current_dir = File.cwd!()
+    current_time = DateTime.utc_now() |> DateTime.to_string()
+
+    "You are a helpful coding assistant. You are currently in #{current_dir} and it is now #{current_time}."
   end
 
   def init(_) do
-    {:ok, %{history: [%{role: "system", content: @sys_prompt}]}}
+    {:ok, %{history: [%{role: "system", content: system_prompt()}]}}
   end
 
   def handle_call({:prompt, model, prompt}, _from, state) do
@@ -37,10 +39,9 @@ defmodule ExAgent do
         Logger.error("Warning: OPENAI_API_KEY not set")
 
       api_key ->
-        Req.post("#{@api_host}/chat/completions",
-          auth: {:bearer, api_key},
-          json: %{model: model, messages: messages, tools: Tools.all_schemas()}
-        )
+        payload = %{model: model, messages: messages, tools: Tools.all_schemas()}
+
+        Req.post("#{@api_host}/chat/completions", auth: {:bearer, api_key}, json: payload)
     end
   end
 

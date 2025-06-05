@@ -13,12 +13,12 @@ defmodule ExAgent.Tools do
     end
   end
 
-  def list_dir_schema do
+  def list_files_schema do
     %{
       type: "function",
       function: %{
-        name: "list_dir",
-        description: "List files in a directory.",
+        name: "list_files",
+        description: "List files in a given directory.",
         parameters: %{
           type: "object",
           properties: %{path: %{type: "string", description: "Path to the directory"}},
@@ -30,7 +30,7 @@ defmodule ExAgent.Tools do
     }
   end
 
-  def list_dir(path) do
+  def list_files(path) do
     if File.exists?(path) do
       File.ls!(path)
     else
@@ -38,7 +38,32 @@ defmodule ExAgent.Tools do
     end
   end
 
+  def read_file_schema do
+    %{
+      type: "function",
+      function: %{
+        name: "read_file",
+        description: "Read the contents of a file.",
+        parameters: %{
+          type: "object",
+          properties: %{path: %{type: "string", description: "Path of the file to read"}},
+          additionalProperties: false,
+          required: ["path"]
+        },
+        strict: true
+      }
+    }
+  end
+
+  def read_file(path) do
+    if File.exists?(path) do
+      File.read!(path)
+    else
+      "Error: file does not exist"
+    end
+  end
+
   def all_schemas do
-    [list_dir_schema()]
+    [list_files_schema(), read_file_schema()]
   end
 end
