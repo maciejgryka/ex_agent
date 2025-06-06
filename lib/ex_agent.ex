@@ -15,6 +15,10 @@ defmodule ExAgent do
     GenServer.call(__MODULE__, {:prompt, "gpt-4.1-nano", prompt})
   end
 
+  def reset do
+    GenServer.call(__MODULE__, :reset)
+  end
+
   defp system_prompt do
     current_dir = File.cwd!()
     current_time = DateTime.utc_now() |> DateTime.to_string()
@@ -30,6 +34,11 @@ defmodule ExAgent do
     state = Map.put(state, :model, model)
     new_messages = [%{role: "user", content: prompt}]
     new_state = continue_chat(state, new_messages)
+    {:reply, :ok, new_state}
+  end
+
+  def handle_call(:reset, _from, state) do
+    new_state = %{state | history: [%{role: "system", content: system_prompt()}]}
     {:reply, :ok, new_state}
   end
 

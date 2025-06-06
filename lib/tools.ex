@@ -1,11 +1,20 @@
 defmodule ExAgent.Tools do
+  defp parse_args(args_str) do
+    with {:ok, args} <- Jason.decode(args_str),
+         args = Map.new(args, fn {k, v} -> {String.to_existing_atom(k), v} end) do
+      args
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   def execute(%{
         "function" => %{"arguments" => args, "name" => function_name},
         "id" => call_id,
         "type" => "function"
       }) do
     with function_name when is_atom(function_name) <- String.to_existing_atom(function_name),
-         {:ok, args} <- Jason.decode(args) do
+         args when is_map(args) <- parse_args(args) do
       result = apply(__MODULE__, function_name, [args])
       {:ok, {call_id, result}}
     else
@@ -39,7 +48,32 @@ defmodule ExAgent.Tools do
     }
   end
 
-  def list_files(%{"path" => path}) do
+  @doc """
+  Lists files in the specified directory.
+
+  Takes a map containing a "path" key with the directory path relative to the current
+  working directory. Returns a list of filenames if the directory exists, or an error
+  message string if the directory does not exist.
+
+  ## Parameters
+
+  - `path_map` - A map containing the "path" key with the directory path as a string
+
+  ## Returns
+
+  - A list of strings representing filenames if the directory exists
+  - An error message string if the directory does not exist
+
+  ## Examples
+
+      iex> ExAgent.Tools.list_files(%{"path" => "."})
+      ["file1.txt", "file2.txt", "subdirectory"]
+
+      iex> ExAgent.Tools.list_files(%{"path" => "nonexistent"})
+      "Error: path does not exist"
+  """
+  @spec list_files(%{path: String.t()}) :: list(String.t()) | String.t()
+  def list_files(%{path: path}) do
     path = localize(path)
 
     if File.exists?(path) do
@@ -71,7 +105,7 @@ defmodule ExAgent.Tools do
     }
   end
 
-  def read_file(%{"path" => path}) do
+  def read_file(%{path: path}) do
     path = localize(path)
 
     if File.exists?(path) do
@@ -108,7 +142,7 @@ defmodule ExAgent.Tools do
     }
   end
 
-  def edit_file(%{"path" => path, "old_str" => old_str, "new_str" => new_str}) do
+  def edit_file(%{path: path, old_str: old_str, new_str: new_str}) do
     path = localize(path)
 
     if File.exists?(path) do
