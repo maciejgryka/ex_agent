@@ -46,6 +46,7 @@ defmodule ExAgent do
   end
 
   defp continue_chat(state, new_messages) do
+    Logger.info(inspect(new_messages))
     new_history = state.history ++ new_messages
 
     Task.async(fn ->
@@ -71,6 +72,8 @@ defmodule ExAgent do
             end
           end)
           |> Enum.reject(&is_nil/1)
+
+        Logger.info("Assistant: #{inspect(tool_calls)}")
 
         send(self(), {:tool_call_results, tool_call_results})
 
