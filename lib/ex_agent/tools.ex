@@ -1,6 +1,5 @@
 defmodule ExAgent.Tools do
   @moduledoc false
-  use ExAgent.Schemer
 
   defp parse_args(args_str) do
     with {:ok, args} <- Jason.decode(args_str) do
@@ -116,19 +115,22 @@ defmodule ExAgent.Tools do
       type: "function",
       function: %{
         name: "edit_file",
-        description: """
-        Make edits to a text file.
-
-        Replaces 'old_str' with 'new_str' in the file under `path`. 'old_str' and 'new_str' MUST be different from each other.
-
-        If the file specified with path doesn't exist, it will be created. Path is relative to the current working directory.
-        """,
+        description: "Edit the contents of a file by replacing a substring (old_str) with a new substring (new_str).",
         parameters: %{
           type: "object",
           properties: %{
-            path: %{type: "string", description: "Path of the file to read"},
-            old_str: %{type: "string", description: "old string to replace"},
-            new_str: %{type: "string", description: "new string to replace with"}
+            path: %{
+              type: "string",
+              description: "Path of the file to edit, relative to the current working directory"
+            },
+            old_str: %{
+              type: "string",
+              description: "The string to be replaced in the file"
+            },
+            new_str: %{
+              type: "string",
+              description: "The string to replace old_str with"
+            }
           },
           additionalProperties: false,
           required: ["path", "old_str", "new_str"]
