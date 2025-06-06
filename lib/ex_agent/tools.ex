@@ -1,18 +1,15 @@
 defmodule ExAgent.Tools do
+  @moduledoc false
+  use ExAgent.Schemer
+
   defp parse_args(args_str) do
-    with {:ok, args} <- Jason.decode(args_str),
-         args = Map.new(args, fn {k, v} -> {String.to_existing_atom(k), v} end) do
+    with {:ok, args} <- Jason.decode(args_str) do
+      args = Map.new(args, fn {k, v} -> {String.to_existing_atom(k), v} end)
       args
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 
-  def execute(%{
-        "function" => %{"arguments" => args, "name" => function_name},
-        "id" => call_id,
-        "type" => "function"
-      }) do
+  def execute(%{"function" => %{"arguments" => args, "name" => function_name}, "id" => call_id, "type" => "function"}) do
     with function_name when is_atom(function_name) <- String.to_existing_atom(function_name),
          args when is_map(args) <- parse_args(args) do
       result = apply(__MODULE__, function_name, [args])
@@ -72,7 +69,6 @@ defmodule ExAgent.Tools do
       iex> ExAgent.Tools.list_files(%{"path" => "nonexistent"})
       "Error: path does not exist"
   """
-  @spec list_files(%{path: String.t()}) :: list(String.t()) | String.t()
   def list_files(%{path: path}) do
     path = localize(path)
 
@@ -150,8 +146,6 @@ defmodule ExAgent.Tools do
            updated_content = String.replace(content, old_str, new_str),
            :ok <- File.write(path, updated_content) do
         {:ok, updated_content}
-      else
-        {:error, reason} -> {:error, reason}
       end
     else
       "Error: file does not exist"

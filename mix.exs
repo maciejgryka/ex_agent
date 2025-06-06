@@ -24,7 +24,9 @@ defmodule ExAgent.MixProject do
     [
       {:req, "~> 0.5.10"},
       {:jason, "~> 1.4"},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:styler, "~> 1.1", only: [:dev, :test], runtime: false}
     ]
   end
 end

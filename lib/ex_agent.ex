@@ -1,11 +1,10 @@
 defmodule ExAgent do
+  @moduledoc false
   use GenServer
 
   alias ExAgent.Tools
 
   require Logger
-
-  @api_host "https://api.openai.com/v1"
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -21,7 +20,7 @@ defmodule ExAgent do
 
   defp system_prompt do
     current_dir = File.cwd!()
-    current_time = DateTime.utc_now() |> DateTime.to_string()
+    current_time = DateTime.to_string(DateTime.utc_now())
 
     "You are a helpful coding assistant. You are currently in #{current_dir} and it is now #{current_time}."
   end
@@ -43,15 +42,7 @@ defmodule ExAgent do
   end
 
   defp request(messages, model) do
-    case System.get_env("OPENAI_API_KEY") do
-      nil ->
-        Logger.error("Warning: OPENAI_API_KEY not set")
-
-      api_key ->
-        payload = %{model: model, messages: messages, tools: Tools.all_schemas()}
-
-        Req.post("#{@api_host}/chat/completions", auth: {:bearer, api_key}, json: payload)
-    end
+    OpenAI.request(messages, model, Tools.all_schemas())
   end
 
   defp continue_chat(state, new_messages) do
