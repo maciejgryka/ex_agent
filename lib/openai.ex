@@ -18,6 +18,9 @@ defmodule OpenAI do
             tools -> Map.put(payload, :tools, tools)
           end
 
+        {:ok, content} = Jason.encode(payload)
+        File.write("payload.json", content)
+
         Req.post("#{@api_host}/chat/completions", auth: {:bearer, api_key}, json: payload)
     end
   end

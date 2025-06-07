@@ -71,10 +71,10 @@ defmodule ExAgent.Tools do
   def list_files(%{path: path}) do
     path = localize(path)
 
-    if File.exists?(path) do
+    if File.dir?(path) do
       File.ls!(path)
     else
-      "Error: path does not exist"
+      "Error: path is not a directory"
     end
   end
 
@@ -83,7 +83,8 @@ defmodule ExAgent.Tools do
       type: "function",
       function: %{
         name: "read_file",
-        description: "Read the contents of a file.",
+        description:
+          "Read the contents of a file. No need to check for file existance: if if does not exist, an error message is returned.",
         parameters: %{
           type: "object",
           properties: %{
@@ -125,7 +126,7 @@ defmodule ExAgent.Tools do
             },
             old_str: %{
               type: "string",
-              description: "The string to be replaced in the file"
+              description: "The string to be replaced in the file. MUST but unique."
             },
             new_str: %{
               type: "string",
@@ -143,15 +144,26 @@ defmodule ExAgent.Tools do
   def edit_file(%{path: path, old_str: old_str, new_str: new_str}) do
     path = localize(path)
 
-    if File.exists?(path) do
-      with {:ok, content} <- File.read(path),
-           updated_content = String.replace(content, old_str, new_str),
-           :ok <- File.write(path, updated_content) do
-        {:ok, updated_content}
-      end
+    with true <- File.exists?(path),
+         {:ok, content} <- File.read(path),
+         1 <- count_occurrences(content, old_str),
+         updated_content = String.replace(content, old_str, new_str),
+         :ok <- File.write(path, updated_content) do
+      updated_content
     else
-      "Error: file does not exist"
+      false -> "Error: file does not exist"
+      0 -> "Error: old_str not found"
+      occ when occ > 1 -> "Error: old_str is not unique"
     end
+  end
+
+  def count_occurrences(content, substring) do
+    parts =
+      content
+      |> String.split(substring, include_captures: true)
+      |> Enum.count()
+
+    parts - 1
   end
 
   def all_schemas do

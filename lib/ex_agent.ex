@@ -65,11 +65,9 @@ defmodule ExAgent do
         tool_call_results =
           tool_calls
           |> Enum.map(&Tools.execute/1)
-          |> Enum.map(fn tool_call_result ->
-            case tool_call_result do
-              {:ok, result} -> result
-              {:error, _} -> nil
-            end
+          |> Enum.map(fn
+            {:ok, result} -> result
+            {:error, _} -> nil
           end)
           |> Enum.reject(&is_nil/1)
 
@@ -82,7 +80,7 @@ defmodule ExAgent do
         {:noreply, %{state | history: new_history}}
 
       %{"choices" => [%{"message" => %{"content" => content}} | _]} ->
-        new_history = state.history ++ [%{role: "assistant", content: content}]
+        new_history = state.history ++ [%{role: "assistant", content: Jason.encode!(content)}]
         Logger.info("Assistant: #{content}")
         {:noreply, %{state | history: new_history}}
 
@@ -100,7 +98,7 @@ defmodule ExAgent do
   def handle_info({:tool_call_results, tool_call_results}, state) do
     new_messages =
       Enum.map(tool_call_results, fn {tool_call_id, result} ->
-        %{role: "tool", tool_call_id: tool_call_id, content: inspect(result)}
+        %{role: "tool", tool_call_id: tool_call_id, content: Jason.encode!(result)}
       end)
 
     new_state = continue_chat(state, new_messages)
