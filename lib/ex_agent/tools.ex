@@ -139,7 +139,100 @@ defmodule ExAgent.Tools do
     parts - 1
   end
 
+  def find_schema do
+    %{
+      type: "function",
+      function: %{
+        name: "find",
+        description: "Find files using the unix `find` command.",
+        parameters: %{
+          type: "object",
+          properties: %{
+            path: %{
+              type: "string",
+              description: "Path to start finding from, relative to the current working directory"
+            },
+            pattern: %{type: "string", description: "Filename pattern to find"}
+          },
+          additionalProperties: false,
+          required: ["path", "pattern"]
+        },
+        strict: true
+      }
+    }
+  end
+
+  def find(%{path: path, pattern: pattern}) do
+    path = localize(path)
+
+    if File.dir?(path) do
+      {result, 0} = System.cmd("find", [path, "-name", pattern])
+      String.split(String.trim(result), "\n")
+    else
+      "Error: path is not a directory"
+    end
+  end
+
+  def regex_search_schema do
+    %{
+      type: "function",
+      function: %{
+        name: "regex_search",
+        description:
+          "Search for matches of a regex pattern in files using the `rg` (ripgrep) command. Returns a list of file paths with line numbers where matches occur.",
+        parameters: %{
+          type: "object",
+          properties: %{
+            path: %{
+              type: "string",
+              description: "Path to start searching from, relative to the current working directory"
+            },
+            pattern: %{type: "string", description: "Regex pattern to match"}
+          },
+          additionalProperties: false,
+          required: ["path", "pattern"]
+        },
+        strict: true
+      }
+    }
+  end
+
+  def regex_search(%{path: path, pattern: pattern}) do
+    path = localize(path)
+
+    if File.dir?(path) do
+      {result, _} =
+        System.cmd("rg", ["--json", "-n", "-H", "--color", "never", "-s", pattern, path])
+
+      # Parse lines of JSON from ripgrep output
+      results =
+        result
+        |> String.split("\n", trim: true)
+        |> Enum.filter(&(&1 != ""))
+        |> Enum.map(fn line ->
+          case Jason.decode(line) do
+            {:ok,
+             %{
+               "type" => "match",
+               "data" => %{"lines" => %{"text" => text}, "line_number" => line_number, "path" => %{"text" => file}}
+             }} ->
+              {file, line_number, text}
+
+            _ ->
+              nil
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+
+      results
+      |> Enum.map(fn {file, line_number, _text} -> "#{file}:#{line_number}" end)
+      |> Enum.uniq()
+    else
+      "Error: path is not a directory"
+    end
+  end
+
   def all_schemas do
-    [list_files_schema(), read_file_schema(), edit_file_schema()]
+    [list_files_schema(), read_file_schema(), edit_file_schema(), find_schema(), regex_search_schema()]
   end
 end
