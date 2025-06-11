@@ -4,15 +4,29 @@ defmodule ExAgent do
 
   alias ExAgent.Tools
 
-  def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  def prompt(content), do: GenServer.call(__MODULE__, {:prompt, "gpt-4.1-nano", content})
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  def prompt(content) do
+    GenServer.call(__MODULE__, {:prompt, "gpt-4.1-nano", content})
+  end
+
   def reset, do: GenServer.call(__MODULE__, :reset)
 
   defp system_prompt do
-    "You are a helpful coding assistant. You are currently in #{File.cwd!()} and it is now #{DateTime.to_string(DateTime.utc_now())}."
+    cwd = File.cwd!()
+    ts = DateTime.to_string(DateTime.utc_now())
+
+    """
+    You are a helpful coding assistant.
+    You are currently in #{cwd} and it is now #{ts}.
+    """
   end
 
-  def init(_), do: {:ok, %{history: [%{role: "system", content: system_prompt()}]}}
+  def init(_) do
+    {:ok, %{history: [%{role: "system", content: system_prompt()}]}}
+  end
 
   def handle_call({:prompt, model, content}, _from, state) do
     state = Map.put(state, :model, model)
@@ -21,7 +35,11 @@ defmodule ExAgent do
   end
 
   def handle_call(:reset, _from, state) do
-    {:reply, :ok, %{state | history: [%{role: "system", content: system_prompt()}]}}
+    {
+      :reply,
+      :ok,
+      %{state | history: [%{role: "system", content: system_prompt()}]}
+    }
   end
 
   def handle_info({_ref, {:api_response, response}}, state) do
@@ -44,13 +62,19 @@ defmodule ExAgent do
   def handle_info({:tool_call_results, tool_call_results}, state) do
     new_messages =
       Enum.map(tool_call_results, fn {tool_call_id, result} ->
-        %{role: "tool", tool_call_id: tool_call_id, content: Jason.encode!(result)}
+        %{
+          role: "tool",
+          tool_call_id: tool_call_id,
+          content: Jason.encode!(result)
+        }
       end)
 
     {:noreply, continue_chat(state, new_messages)}
   end
 
-  def handle_info({:DOWN, _ref, :process, _pid, :normal}, state), do: {:noreply, state}
+  def handle_info({:DOWN, _ref, :process, _pid, :normal}, state) do
+    {:noreply, state}
+  end
 
   defp continue_chat(state, new_messages) do
     IO.inspect(new_messages, label: "Continue chat")

@@ -1,5 +1,4 @@
 defmodule OpenAI do
-  @moduledoc false
   alias ExAgent.Tools
 
   def request(messages, model, tools \\ nil) do
@@ -15,7 +14,12 @@ defmodule OpenAI do
           end
 
         File.write("payload.json", Jason.encode!(payload))
-        Req.post("https://api.openai.com/v1/chat/completions", auth: {:bearer, api_key}, json: payload)
+
+        Req.post(
+          "https://api.openai.com/v1/chat/completions",
+          auth: {:bearer, api_key},
+          json: payload
+        )
     end
   end
 
@@ -36,6 +40,9 @@ defmodule OpenAI do
     {%{"role" => "assistant", "content" => Jason.encode!(content)}, nil}
   end
 
-  def has_tool_calls?(%{"choices" => [%{"message" => %{"tool_calls" => _tool_calls}} | _]}), do: true
+  def has_tool_calls?(%{"choices" => [%{"message" => %{"tool_calls" => _tool_calls}} | _]}) do
+    true
+  end
+
   def has_tool_calls?(_), do: false
 end
