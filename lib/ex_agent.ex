@@ -2,8 +2,6 @@ defmodule ExAgent do
   @moduledoc false
   use GenServer
 
-  alias ExAgent.Tools
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -43,13 +41,9 @@ defmodule ExAgent do
   end
 
   def handle_info({_ref, {:api_response, response}}, state) do
-    {message, tool_call_results} = OpenAI.run(response.body)
+    {message, _} = OpenAI.run(response.body)
     pretty_print(message)
     new_history = state.history ++ [message]
-
-    if OpenAI.has_tool_calls?(response.body) do
-      send(self(), {:tool_call_results, tool_call_results})
-    end
 
     {:noreply, %{state | history: new_history}}
   end
@@ -57,19 +51,6 @@ defmodule ExAgent do
   def handle_info({_ref, {:api_error, error}}, state) do
     IO.inspect(error, label: "API Error")
     {:noreply, state}
-  end
-
-  def handle_info({:tool_call_results, tool_call_results}, state) do
-    new_messages =
-      Enum.map(tool_call_results, fn {tool_call_id, result} ->
-        %{
-          role: "tool",
-          tool_call_id: tool_call_id,
-          content: Jason.encode!(result)
-        }
-      end)
-
-    {:noreply, continue_chat(state, new_messages)}
   end
 
   def handle_info({:DOWN, _ref, :process, _pid, :normal}, state) do
@@ -81,17 +62,13 @@ defmodule ExAgent do
     new_history = state.history ++ new_messages
 
     Task.async(fn ->
-      case OpenAI.request(new_history, state.model, Tools.all_schemas()) do
+      case OpenAI.request(new_history, state.model) do
         {:ok, response} -> send(self(), {:api_response, response})
         {:error, error} -> send(self(), {:api_error, error})
       end
     end)
 
     %{state | history: new_history}
-  end
-
-  defp pretty_print(%{"role" => "assistant", "tool_calls" => tool_calls}) do
-    IO.inspect(tool_calls, label: "Tool Calls")
   end
 
   defp pretty_print(%{"role" => "assistant", "content" => content}) do
