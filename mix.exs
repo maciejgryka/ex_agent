@@ -1,32 +1,13 @@
 defmodule ExAgent.MixProject do
   use Mix.Project
 
-  def project do
-    [
-      app: :ex_agent,
-      version: "0.1.0",
-      elixir: "~> 1.18",
-      start_permanent: Mix.env() == :prod,
-      deps: deps()
-    ]
-  end
+  def project, do: [app: :ex_agent, version: "0.1.0", deps: deps()]
+  def application, do: [extra_applications: [:logger], mod: {ExAgent.Application, []}]
 
-  # Run "mix help compile.app" to learn about applications.
-  def application do
-    [
-      extra_applications: [:logger],
-      mod: {ExAgent.Application, []}
-    ]
-  end
-
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:req, "~> 0.5.10"},
-      {:jason, "~> 1.4"},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:styler, "~> 1.1", only: [:dev, :test], runtime: false}
+      {:jason, "~> 1.4"}
     ]
   end
 end

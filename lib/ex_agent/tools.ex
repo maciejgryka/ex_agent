@@ -3,8 +3,7 @@ defmodule ExAgent.Tools do
 
   defp parse_args(args_str) do
     with {:ok, args} <- Jason.decode(args_str) do
-      args = Map.new(args, fn {k, v} -> {String.to_existing_atom(k), v} end)
-      args
+      Map.new(args, fn {k, v} -> {String.to_existing_atom(k), v} end)
     end
   end
 
@@ -18,9 +17,7 @@ defmodule ExAgent.Tools do
     end
   end
 
-  defp localize(path) do
-    Path.join(File.cwd!(), path)
-  end
+  defp localize(path), do: Path.join(File.cwd!(), path)
 
   def list_files_schema do
     %{
@@ -44,30 +41,6 @@ defmodule ExAgent.Tools do
     }
   end
 
-  @doc """
-  Lists files in the specified directory.
-
-  Takes a map containing a "path" key with the directory path relative to the current
-  working directory. Returns a list of filenames if the directory exists, or an error
-  message string if the directory does not exist.
-
-  ## Parameters
-
-  - `path_map` - A map containing the "path" key with the directory path as a string
-
-  ## Returns
-
-  - A list of strings representing filenames if the directory exists
-  - An error message string if the directory does not exist
-
-  ## Examples
-
-      iex> ExAgent.Tools.list_files(%{"path" => "."})
-      ["file1.txt", "file2.txt", "subdirectory"]
-
-      iex> ExAgent.Tools.list_files(%{"path" => "nonexistent"})
-      "Error: path does not exist"
-  """
   def list_files(%{path: path}) do
     path = localize(path)
 

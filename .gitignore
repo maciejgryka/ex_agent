@@ -50,3 +50,4 @@ example_load.json
 
 *.sql
 db_dumps/
+payload.json

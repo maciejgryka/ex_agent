@@ -1,27 +1,41 @@
 defmodule OpenAI do
   @moduledoc false
-  require Logger
-
-  @api_host "https://api.openai.com/v1"
+  alias ExAgent.Tools
 
   def request(messages, model, tools \\ nil) do
     case System.get_env("OPENAI_API_KEY") do
       nil ->
-        Logger.error("Warning: OPENAI_API_KEY not set")
+        IO.inspect("OPENAI_API_KEY not set", label: "API Error")
 
       api_key ->
-        payload = %{model: model, messages: messages}
-
         payload =
           case tools do
-            nil -> payload
-            tools -> Map.put(payload, :tools, tools)
+            nil -> %{model: model, messages: messages}
+            tools -> %{model: model, messages: messages, tools: tools}
           end
 
-        {:ok, content} = Jason.encode(payload)
-        File.write("payload.json", content)
-
-        Req.post("#{@api_host}/chat/completions", auth: {:bearer, api_key}, json: payload)
+        File.write("payload.json", Jason.encode!(payload))
+        Req.post("https://api.openai.com/v1/chat/completions", auth: {:bearer, api_key}, json: payload)
     end
   end
+
+  def run(%{"choices" => [%{"message" => %{"tool_calls" => tool_calls} = message}]}) do
+    tool_call_results =
+      tool_calls
+      |> Enum.map(&Tools.execute/1)
+      |> Enum.map(fn
+        {:ok, result} -> result
+        {:error, _} -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    {message, tool_call_results}
+  end
+
+  def run(%{"choices" => [%{"message" => %{"role" => "assistant", "content" => content}} | _]}) do
+    {%{"role" => "assistant", "content" => Jason.encode!(content)}, nil}
+  end
+
+  def has_tool_calls?(%{"choices" => [%{"message" => %{"tool_calls" => _tool_calls}} | _]}), do: true
+  def has_tool_calls?(_), do: false
 end
