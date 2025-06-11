@@ -7,8 +7,12 @@ defmodule ExAgent.Tools do
     end
   end
 
-  def execute(%{"function" => %{"arguments" => args, "name" => function_name}, "id" => call_id, "type" => "function"}) do
-    with function_name when is_atom(function_name) <- String.to_existing_atom(function_name),
+  def execute(%{
+        "type" => "function",
+        "id" => call_id,
+        "function" => %{"arguments" => args, "name" => function_name}
+      }) do
+    with function_name <- String.to_existing_atom(function_name),
          args when is_map(args) <- parse_args(args) do
       result = apply(__MODULE__, function_name, [args])
       {:ok, {call_id, result}}
@@ -20,25 +24,7 @@ defmodule ExAgent.Tools do
   defp localize(path), do: Path.join(File.cwd!(), path)
 
   def list_files_schema do
-    %{
-      type: "function",
-      function: %{
-        name: "list_files",
-        description: "List files in a given directory.",
-        parameters: %{
-          type: "object",
-          properties: %{
-            path: %{
-              type: "string",
-              description: "Path to the directory, relative to the current working directory"
-            }
-          },
-          additionalProperties: false,
-          required: ["path"]
-        },
-        strict: true
-      }
-    }
+    %{}
   end
 
   def list_files(%{path: path}) do
@@ -52,26 +38,7 @@ defmodule ExAgent.Tools do
   end
 
   def read_file_schema do
-    %{
-      type: "function",
-      function: %{
-        name: "read_file",
-        description:
-          "Read the contents of a file. No need to check for file existance: if if does not exist, an error message is returned.",
-        parameters: %{
-          type: "object",
-          properties: %{
-            path: %{
-              type: "string",
-              description: "Path of the file to read, relative to the current working directory"
-            }
-          },
-          additionalProperties: false,
-          required: ["path"]
-        },
-        strict: true
-      }
-    }
+    %{}
   end
 
   def read_file(%{path: path}) do
@@ -85,33 +52,7 @@ defmodule ExAgent.Tools do
   end
 
   def edit_file_schema do
-    %{
-      type: "function",
-      function: %{
-        name: "edit_file",
-        description: "Edit the contents of a file by replacing a substring (old_str) with a new substring (new_str).",
-        parameters: %{
-          type: "object",
-          properties: %{
-            path: %{
-              type: "string",
-              description: "Path of the file to edit, relative to the current working directory"
-            },
-            old_str: %{
-              type: "string",
-              description: "The string to be replaced in the file. MUST but unique."
-            },
-            new_str: %{
-              type: "string",
-              description: "The string to replace old_str with"
-            }
-          },
-          additionalProperties: false,
-          required: ["path", "old_str", "new_str"]
-        },
-        strict: true
-      }
-    }
+    %{}
   end
 
   def edit_file(%{path: path, old_str: old_str, new_str: new_str}) do
