@@ -58,6 +58,7 @@ ExAgent.prompt("""
 
 ```
 ExAgent.prompt("what does this project do?")
+ExAgent.prompt("how would you improve this?")
 ```
 
 ## Editing + more tools
