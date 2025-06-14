@@ -9,7 +9,7 @@ defmodule ExAgent do
   end
 
   def prompt(content) do
-    GenServer.call(__MODULE__, {:prompt, "gpt-4.1-nano", content})
+    GenServer.call(__MODULE__, {:prompt, "o3", content})
   end
 
   def reset, do: GenServer.call(__MODULE__, :reset)

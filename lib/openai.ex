@@ -18,7 +18,8 @@ defmodule OpenAI do
         Req.post(
           "https://api.openai.com/v1/chat/completions",
           auth: {:bearer, api_key},
-          json: payload
+          json: payload,
+          receive_timeout: 60_000
         )
     end
   end
@@ -37,7 +38,7 @@ defmodule OpenAI do
   end
 
   def run(%{"choices" => [%{"message" => %{"role" => "assistant", "content" => content}} | _]}) do
-    {%{"role" => "assistant", "content" => Jason.encode!(content)}, nil}
+    {%{"role" => "assistant", "content" => content}, nil}
   end
 
   def has_tool_calls?(%{"choices" => [%{"message" => %{"tool_calls" => _tool_calls}} | _]}) do
